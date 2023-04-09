@@ -1,3 +1,8 @@
+#ifdef OS_WINDOWS
+#include <windows.h>
+#include <stdio.h>
+#endif
+
 #include <GL/gl.h>
 #include <SDL2/SDL.h>
 
@@ -5,15 +10,17 @@ typedef unsigned long long u64;
 typedef long long i64;
 
 #include <time.h>
-#include <unistd.h>
 
 #ifdef OS_LINUX
+#include <unistd.h>
 // Get a timestamp in micro seconds
 static u64 os_utime(void) {
   struct timespec t = {};
   clock_gettime(CLOCK_MONOTONIC, &t);
   return t.tv_sec * 1000 * 1000 + t.tv_nsec / 1000;
 }
+
+static void os_usleep(u64 time) { usleep(time / 1000); }
 #endif
 
 #ifdef OS_WINDOWS
@@ -28,14 +35,17 @@ static u64 os_utime(void) {
   i64 time = count / (freq / 1000 / 1000);
   return (u64)time;
 }
+
+static void os_usleep(u64 time) { Sleep(time / 1000); }
 #endif
 
-static void os_usleep(u64 time) { usleep(time); }
 
+
+#undef main
 int main(int argc, char *argv[]) {
   // load sdl and create a window
   SDL_Init(SDL_INIT_EVERYTHING);
-  SDL_Window *win = SDL_CreateWindow("nolag", 0, 0, 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+  SDL_Window *win = SDL_CreateWindow("nolag", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
   SDL_GL_CreateContext(win);
 
   // enable vsync
@@ -47,6 +57,7 @@ int main(int argc, char *argv[]) {
   int opt_clear = 0;
   int opt_vsync = 1;
   int opt_sleep = 0;
+  int opt_full  = 0;
   
   u64 dt_draw   = 0;
   u64 dt_swap   = 0;
@@ -72,7 +83,9 @@ int main(int argc, char *argv[]) {
         if(ev.key.keysym.sym == SDLK_1) opt_vsync = !opt_vsync;
         if(ev.key.keysym.sym == SDLK_2) opt_clear = !opt_clear;
         if(ev.key.keysym.sym == SDLK_3) opt_sleep = !opt_sleep;
+        if(ev.key.keysym.sym == SDLK_4) opt_full  = !opt_full;
         SDL_GL_SetSwapInterval(opt_vsync);
+        SDL_SetWindowFullscreen(win, opt_full * SDL_WINDOW_FULLSCREEN_DESKTOP);
       }
     }
 
@@ -101,7 +114,9 @@ int main(int argc, char *argv[]) {
     SDL_GL_SwapWindow(win);
     if(opt_clear) glClear(GL_COLOR_BUFFER_BIT);
     u64 t2 = os_utime();
-    while(opt_sleep && (os_utime() - t2) + dt_draw + 100 < dt_target) { os_usleep(0); }
+    volatile int i = 0;
+    while(opt_sleep && (os_utime() - t2) + dt_draw + 5000 < dt_target) { os_usleep(0); }
+    while(opt_sleep && (os_utime() - t2) + dt_draw +  400 < dt_target) { i+= 1; }
     u64 t3 = os_utime();
 
     // calcluate the time values
@@ -131,9 +146,3 @@ int main(int argc, char *argv[]) {
   }
   return 0;
 }
-
-#ifdef OS_WINDOWS
-int APIENTRY WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmdline, int showcmd) {
-  main(0, 0);
-}
-#endif
