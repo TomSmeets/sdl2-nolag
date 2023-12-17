@@ -228,11 +228,11 @@ int main(int argc, char *argv[]) {
             printf("  tearing        = %d (press 7)\n", opt_tear);
             printf("\n");
             printf("measured:\n");
-            printf("  input   = %6lld us\n", dt0_input);
-            printf("  compute = %6lld us\n", dt1_compute);
-            printf("  swap    = %6lld us\n", dt2_swap);
-            printf("  sleep   = %6lld us\n", dt3_sleep);
-            printf("  count   = %6lld us\n", count);
+            printf("  input   = %6llu us\n", dt0_input);
+            printf("  compute = %6llu us\n", dt1_compute);
+            printf("  swap    = %6llu us\n", dt2_swap);
+            printf("  sleep   = %6llu us\n", dt3_sleep);
+            printf("  count   = %6u us\n", count);
             printf("\n");
         }
     }
