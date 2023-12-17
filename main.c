@@ -66,6 +66,8 @@ static void os_usleep(u64 time) { Sleep(time / 1000); }
 // wayland,vsync       =  2 frames of input lag
 // wayland,vsync,clear =  2 frames of input lag
 //
+// so: vsync=0 + sleep + wayland is best
+//
 
 int main(int argc, char *argv[]) {
   // load sdl and create a window
@@ -89,6 +91,9 @@ int main(int argc, char *argv[]) {
   u64 time_to_show_information = 0;
 
   u32 frame_counter = 0;
+
+  u64 time      = os_utime();
+  u64 dt_target = 1e6 / 240;
   for (;;) {
     // -------- INPUT --------
     u64 t0_input = os_utime();
@@ -147,7 +152,7 @@ int main(int argc, char *argv[]) {
     glLoadIdentity();
     glOrtho(0, window_w, window_h, 0, 0, 1);
     if(opt_tear && frame_counter++ % 2 == 0) {
-      glClearColor(1, 1, 1, 1);
+      glClearColor(0, 0, 0.3, 1);
     } else {
       glClearColor(0, 0, 0, 1);
     }
@@ -160,11 +165,11 @@ int main(int argc, char *argv[]) {
       float y = mouse_y;
       glBegin(GL_LINES);
       glColor3f(0, 0, 1);
-      if(0) {
-      glVertex2f(x + cross_size * .2, y + cross_size * .2);
-      glVertex2f(x - cross_size * .2, y - cross_size * .2);
-      glVertex2f(x - cross_size * .2, y + cross_size * .2);
-      glVertex2f(x + cross_size * .2, y - cross_size * .2);
+      if (0) {
+        glVertex2f(x + cross_size * .2, y + cross_size * .2);
+        glVertex2f(x - cross_size * .2, y - cross_size * .2);
+        glVertex2f(x - cross_size * .2, y + cross_size * .2);
+        glVertex2f(x + cross_size * .2, y - cross_size * .2);
       }
       x += mouse_dx * opt_predict;
       y += mouse_dy * opt_predict;
@@ -186,13 +191,11 @@ int main(int argc, char *argv[]) {
 
     // -------- SLEEP --------
     u64 t3_sleep = os_utime();
-    if(opt_sleep) {
-      volatile int i = 0;
-      // dt = dt_monitor - dt_compute
-      // t + 
-      while(os_utime() - t3_sleep < dt_monitor - (t2_swap - t0_input) - 1000) os_usleep(0);
-      while(os_utime() - t3_sleep < dt_monitor - (t2_swap - t0_input) -  100) i++;
-      /// while(os_utime() +    5 < t0_input + dt_target) i++;
+    time += dt_target;
+    u32 count = 0;
+    while(os_utime() < time)  {
+      os_usleep(0); 
+      count++;
     }
     u64 t4_frame_end = os_utime();
 
@@ -208,15 +211,16 @@ int main(int argc, char *argv[]) {
       printf("  vsync          = %d (press 1)\n", opt_vsync);
       printf("  fullscreen     = %d (press 2)\n", opt_full);
       printf("  predict frames = %d (press 3 and 4)\n", opt_predict);
-      printf("  early clear    = %d (press 5)\n",      opt_early_clear);
-      printf("  extra sleep    = %d (press 6)\n",      opt_sleep);
-      printf("  tearing        = %d (press 7)\n",      opt_tear);
+      printf("  early clear    = %d (press 5)\n",       opt_early_clear);
+      printf("  extra sleep    = %d (press 6)\n",       opt_sleep);
+      printf("  tearing        = %d (press 7)\n",       opt_tear);
       printf("\n");
       printf("measured:\n");
       printf("  input   = %6lld us\n", dt0_input);
       printf("  compute = %6lld us\n", dt1_compute);
       printf("  swap    = %6lld us\n", dt2_swap);
       printf("  sleep   = %6lld us\n", dt3_sleep);
+      printf("  count   = %6lld us\n", count);
       printf("\n");
     }
   }
