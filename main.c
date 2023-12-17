@@ -59,7 +59,7 @@ static void os_usleep(u64 time) {
 //
 // On plasma wayland AMD RX580
 // allowing tearing and choosing best latency settings helps a bit
-// enabeling adaptive sync on kde feels better, but can't really measure it yet
+// enabling adaptive sync on kde feels better, but can't really measure it yet
 // x11                 = ~1 frame  of input lag
 // x11,vsync           =  4 frames of input lag
 // x11,vsync,clear     =  3 frames of input lag
